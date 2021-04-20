@@ -40,8 +40,11 @@ void vecAdd(float *h_A, float *h_B, float *h_C, long n) {
     cudaMemcpy(d_B, h_B, size, cudaMemcpyHostToDevice);
     cudaMemcpy(d_C, h_C, size, cudaMemcpyHostToDevice);
 
+    dim3 dimGrid{(uint) ceil(n/THREAD_PER_BLOCK),1,1};
+    dim3 dimBlock = {(uint) THREAD_PER_BLOCK,1,1};
+
     // KERNEL LAUNCH
-    vecAddKernel<<<ceil(n/THREAD_PER_BLOCK), THREAD_PER_BLOCK>>>(d_A, d_B, d_C, n);
+    vecAddKernel<<<dimGrid, dimBlock>>>(d_A, d_B, d_C, n);
 
 
     cudaMemcpy(h_C, d_C, size, cudaMemcpyDeviceToHost);
