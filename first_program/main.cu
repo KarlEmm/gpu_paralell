@@ -70,7 +70,9 @@ int main() {
 
     vecAdd(h_A, h_B, h_C, nbElements);
 
-    std::cout << h_C[10] << std::endl;
+    for (int i = 10e6; i < 10e7; ++i) {
+        std::cout << h_C[i] << std::endl;
+    }
 
     free(h_A); free(h_B); free(h_C);
 
