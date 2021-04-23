@@ -1,5 +1,7 @@
 #include <iostream>
 
+using namespace std;
+
 #define MATRIX_SIZE 4
 
 #define CUDAMALLOC_ERROR(_err) \
@@ -15,6 +17,19 @@ void fillMatrix(float *matrix, float value)
     for (int i = 0; i < MATRIX_SIZE*MATRIX_SIZE; ++i)
     {
         matrix[i] = value;
+    }
+}
+__global__
+void matrixVecKernel(float *M, float *V, float *O, size_t n)
+{
+    unsigned int Row = blockDim.y * blockIdx.y + threadIdx.y;
+    int result = 0;
+
+    if (Row < n) {
+        for (int i = 0; i < n; ++i) {
+            result += M[Row * n + i] * V[i];
+        }
+        O[Row] = result;
     }
 }
 
@@ -73,15 +88,53 @@ void addMatrices()
 
     cudaMemcpy(h_C, d_C, matrixByteSize, cudaMemcpyDeviceToHost);
 
-    for (int i = 0; i < 15; ++i) {
-        std::cout << h_C[i] << std::endl;
+    cudaFree(d_A); cudaFree(d_B); cudaFree(d_C);
+    free(h_A); free(h_B); free(h_C);
+}
+
+void matrixVec() {
+    cudaDeviceProp dev_prop;
+    cudaGetDeviceProperties(&dev_prop, 0);
+    dim3 dimBlock(1,dev_prop.maxThreadsPerBlock,1);
+    dim3 dimGrid(1, ceil(MATRIX_SIZE/(float) dimBlock.y),1);
+
+    size_t matrixSize = sizeof (float) * MATRIX_SIZE * MATRIX_SIZE;
+    size_t vectorSize = sizeof (float) * MATRIX_SIZE;
+
+    float *matrix = (float *) malloc(matrixSize);
+    float *vector = (float *) malloc(vectorSize);
+    float *output = (float *) malloc(vectorSize);
+
+    // Data initialization
+    fillMatrix(matrix, 2);
+    for (int i = 0; i < MATRIX_SIZE; ++i) {
+        vector[i] = i + 1;
     }
 
-    cudaFree(d_A); cudaFree(d_B); cudaFree(d_C);
+    float *d_matrix, *d_vector, *d_output;
+    cudaError_t err = cudaMalloc((void **) &d_matrix, matrixSize);
+    CUDAMALLOC_ERROR(err);
+    err = cudaMalloc((void **) &d_vector, vectorSize);
+    CUDAMALLOC_ERROR(err);
+    err = cudaMalloc((void **) &d_output, vectorSize);
+    CUDAMALLOC_ERROR(err);
+
+    cudaMemcpy(d_matrix, matrix, matrixSize, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_vector, vector, vectorSize, cudaMemcpyHostToDevice);
+
+    matrixVecKernel<<<dimGrid, dimBlock>>>(d_matrix, d_vector, d_output, MATRIX_SIZE);
+
+    cudaMemcpy(output, d_output, vectorSize, cudaMemcpyDeviceToHost);
+
+    cudaFree(d_matrix);
+    cudaFree(d_vector);
+    cudaFree(d_output);
+    free(matrix); free(vector); free(output);
 }
 
 
 int main() {
     addMatrices();
+    matrixVec();
     return 0;
 }
