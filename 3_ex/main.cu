@@ -73,16 +73,9 @@ void addMatrices()
 
     cudaMemcpy(h_C, d_C, matrixByteSize, cudaMemcpyDeviceToHost);
 
-    for (int i = 0 ; i < 16; ++i) {
-        h_A[i] = 0;
-    }
-
-    cudaMemcpy(h_A, d_A, matrixByteSize, cudaMemcpyDeviceToHost);
-
     for (int i = 0; i < 15; ++i) {
         std::cout << h_C[i] << std::endl;
     }
-
 
     cudaFree(d_A); cudaFree(d_B); cudaFree(d_C);
 }
