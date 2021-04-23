@@ -23,6 +23,11 @@ void colorToGreyscaleConversion(unsigned char *Pout, unsigned char *Pin, int wid
 }
 
 int main() {
-
+    int dev_count;
+    cudaGetDeviceCount(&dev_count);
+    cudaDeviceProp dev_prop;
+    for (int i = 0; i < dev_count; ++i) {
+        cudaGetDeviceProperties(&dev_prop, i);
+    }
     return 0;
 }
